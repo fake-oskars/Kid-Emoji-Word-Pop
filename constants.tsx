@@ -54,7 +54,10 @@ export const ALL_ITEMS: Item[] = [
 
 export const translations: Record<string, Record<string, string>> = {
   en: {
+    Settings: 'Settings',
     startGame: 'Tap to Start!',
+    language: 'Language',
+    itemCount: 'Number of items',
     Cow: 'Cow', Pig: 'Pig', Dog: 'Dog', Cat: 'Cat', Sheep: 'Sheep', Lion: 'Lion', Monkey: 'Monkey', Elephant: 'Elephant', Giraffe: 'Giraffe',
     Apple: 'Apple', Banana: 'Banana', Strawberry: 'Strawberry', Orange: 'Orange', Grapes: 'Grapes',
     Carrot: 'Carrot', Broccoli: 'Broccoli', Tomato: 'Tomato', Potato: 'Potato', 'Bell Pepper': 'Bell Pepper',
@@ -64,7 +67,10 @@ export const translations: Record<string, Record<string, string>> = {
     Guitar: 'Guitar', Piano: 'Piano', Drum: 'Drum',
   },
   lv: {
+    Settings: 'Iestatījumi',
     startGame: 'Pieskaries, lai sāktu!',
+    language: 'Valoda',
+    itemCount: 'Objektu skaits',
     Cow: 'Govs', Pig: 'Cūka', Dog: 'Suns', Cat: 'Kaķis', Sheep: 'Aita', Lion: 'Lauva', Monkey: 'Pērtiķis', Elephant: 'Zilonis', Giraffe: 'Žirafe',
     Apple: 'Ābols', Banana: 'Banāns', Strawberry: 'Zemene', Orange: 'Apelsīns', Grapes: 'Vīnogas',
     Carrot: 'Burkāns', Broccoli: 'Brokolis', Tomato: 'Tomāts', Potato: 'Kartupelis', 'Bell Pepper': 'Paprika',
@@ -74,7 +80,10 @@ export const translations: Record<string, Record<string, string>> = {
     Guitar: 'Ģitāra', Piano: 'Klavieres', Drum: 'Bungas',
   },
   es: {
+    Settings: 'Ajustes',
     startGame: '¡Toca para empezar!',
+    language: 'Idioma',
+    itemCount: 'Número de objetos',
     Cow: 'Vaca', Pig: 'Cerdo', Dog: 'Perro', Cat: 'Gato', Sheep: 'Oveja', Lion: 'León', Monkey: 'Mono', Elephant: 'Elefante', Giraffe: 'Jirafa',
     Apple: 'Manzana', Banana: 'Plátano', Strawberry: 'Fresa', Orange: 'Naranja', Grapes: 'Uvas',
     Carrot: 'Zanahoria', Broccoli: 'Brócoli', Tomato: 'Tomate', Potato: 'Patata', 'Bell Pepper': 'Pimiento',
@@ -84,7 +93,10 @@ export const translations: Record<string, Record<string, string>> = {
     Guitar: 'Guitarra', Piano: 'Piano', Drum: 'Tambor',
   },
   fr: {
+    Settings: 'Paramètres',
     startGame: 'Touchez pour commencer !',
+    language: 'Langue',
+    itemCount: "Nombre d'objets",
     Cow: 'Vache', Pig: 'Cochon', Dog: 'Chien', Cat: 'Chat', Sheep: 'Mouton', Lion: 'Lion', Monkey: 'Singe', Elephant: 'Éléphant', Giraffe: 'Girafe',
     Apple: 'Pomme', Banana: 'Banane', Strawberry: 'Fraise', Orange: 'Orange', Grapes: 'Raisins',
     Carrot: 'Carotte', Broccoli: 'Brocoli', Tomato: 'Tomate', 'Bell Pepper': 'Poivron', Potato: 'Pomme de terre',
@@ -94,7 +106,10 @@ export const translations: Record<string, Record<string, string>> = {
     Guitar: 'Guitare', Piano: 'Piano', Drum: 'Tambour',
   },
   de: {
+    Settings: 'Einstellungen',
     startGame: 'Tippen zum Starten!',
+    language: 'Sprache',
+    itemCount: 'Anzahl der Objekte',
     Cow: 'Kuh', Pig: 'Schwein', Dog: 'Hund', Cat: 'Katze', Sheep: 'Schaf', Lion: 'Löwe', Monkey: 'Affe', Elephant: 'Elefant', Giraffe: 'Giraffe',
     Apple: 'Apfel', Banana: 'Banane', Strawberry: 'Erdbeere', Orange: 'Orange', Grapes: 'Trauben',
     Carrot: 'Karotte', Broccoli: 'Brokkoli', Tomato: 'Tomate', Potato: 'Kartoffel', 'Bell Pepper': 'Paprika',
@@ -106,9 +121,9 @@ export const translations: Record<string, Record<string, string>> = {
 };
 
 export const availableLanguages = [
-  { code: 'en', flag: '🇬🇧' },
-  { code: 'lv', flag: '🇱🇻' },
-  { code: 'es', flag: '🇪🇸' },
-  { code: 'fr', flag: '🇫🇷' },
-  { code: 'de', flag: '🇩🇪' },
+  { code: 'en', flag: '🇬🇧', name: 'English' },
+  { code: 'lv', flag: '🇱🇻', name: 'Latviešu' },
+  { code: 'es', flag: '🇪🇸', name: 'Español' },
+  { code: 'fr', flag: '🇫🇷', name: 'Français' },
+  { code: 'de', flag: '🇩🇪', name: 'Deutsch' },
 ];
