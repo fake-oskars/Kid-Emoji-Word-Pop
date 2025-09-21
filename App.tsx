@@ -1,6 +1,16 @@
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ALL_ITEMS, translations, availableLanguages } from './constants';
-import { playSound, initializeAudio } from './services/audioService';
+import { 
+  playSound, 
+  initializeAudio, 
+  playUIClick, 
+  playMenuOpen, 
+  playMenuClose, 
+  playCorrectSound, 
+  playIncorrectSound,
+  playTransitionSound
+} from './services/audioService';
 import type { Item } from './types';
 
 // --- Helper Functions ---
@@ -148,11 +158,13 @@ const FindItGame: React.FC<{ activeItems: Item[]; t: (key: string) => string; on
         if (feedback !== 'idle' || !target) return;
 
         if (item.name === target.name) {
-            playSound(target.soundFrequency);
+            playCorrectSound();
+            // Play the item sound slightly after the success chime starts
+            setTimeout(() => playSound(target.soundFrequency), 200);
             setFeedback('correct');
             setTimeout(generateChallenge, 1200);
         } else {
-            playSound(100, 0.1);
+            playIncorrectSound();
             setFeedback('incorrect');
             setIncorrectlyClicked(item.name);
             setTimeout(() => {
@@ -230,19 +242,24 @@ const FindItGame: React.FC<{ activeItems: Item[]; t: (key: string) => string; on
 
 // Game Selection Screen
 const GameSelection: React.FC<{ onSelect: (mode: 'name-it' | 'find-it') => void; t: (key: string) => string; }> = ({ onSelect, t }) => {
+  const handleSelection = (mode: 'name-it' | 'find-it') => {
+    playTransitionSound();
+    setTimeout(() => onSelect(mode), 150);
+  };
+  
   return (
     <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-gray-50 to-gray-200 p-4 select-none">
       <h1 className="text-5xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-amber-500 mb-12" style={{ textShadow: '2px 2px 8px rgba(0,0,0,0.1)' }}>{t('selectGame')}</h1>
       <div className="flex flex-col md:flex-row gap-8 md:gap-12">
         <button
-          onClick={() => onSelect('name-it')}
+          onClick={() => handleSelection('name-it')}
           className="group relative flex flex-col items-center justify-center w-64 h-72 md:w-72 md:h-80 bg-gradient-to-br from-sky-400 to-blue-600 rounded-3xl shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl active:scale-95 focus:outline-none focus:ring-4 ring-sky-300 ring-offset-2 overflow-hidden"
         >
           <span className="text-8xl md:text-9xl mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-[-6deg]">🎈</span>
           <span className="text-3xl md:text-4xl font-bold text-white tracking-wide" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}>{t('popItGameTitle')}</span>
         </button>
         <button
-          onClick={() => onSelect('find-it')}
+          onClick={() => handleSelection('find-it')}
           className="group relative flex flex-col items-center justify-center w-64 h-72 md:w-72 md:h-80 bg-gradient-to-br from-amber-400 to-orange-600 rounded-3xl shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl active:scale-95 focus:outline-none focus:ring-4 ring-amber-300 ring-offset-2 overflow-hidden"
         >
           <span className="text-8xl md:text-9xl mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-[6deg]">🔍</span>
@@ -296,6 +313,7 @@ const App: React.FC = () => {
   };
 
   const handleGoBack = () => {
+    playUIClick();
     setGameMode(null);
   };
 
@@ -324,6 +342,11 @@ const App: React.FC = () => {
       <button
         onClick={(e) => {
           e.stopPropagation();
+          if (!isMenuOpen) {
+            playMenuOpen();
+          } else {
+            playMenuClose();
+          }
           setIsMenuOpen(!isMenuOpen);
         }}
         className="absolute top-4 right-4 text-3xl p-2 z-40 bg-white/30 rounded-full hover:bg-white/50 transition-transform duration-200 active:scale-90"
@@ -337,7 +360,10 @@ const App: React.FC = () => {
         className={`absolute inset-0 z-30 transition-opacity duration-300 ${
           isMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
-        onClick={() => setIsMenuOpen(false)}
+        onClick={() => {
+          playMenuClose();
+          setIsMenuOpen(false);
+        }}
       >
         <div
             className={`absolute top-16 right-4 w-[280px] p-4 rounded-xl shadow-2xl origin-top-right
@@ -348,7 +374,7 @@ const App: React.FC = () => {
         >
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold">{t('Settings')}</h2>
-            <button onClick={() => setIsMenuOpen(false)} className="text-2xl text-slate-600 hover:text-slate-900">&times;</button>
+            <button onClick={() => { playMenuClose(); setIsMenuOpen(false); }} className="text-2xl text-slate-600 hover:text-slate-900">&times;</button>
           </div>
           
           <div className="space-y-4">
@@ -357,7 +383,10 @@ const App: React.FC = () => {
               <select
                 id="language-select"
                 value={language}
-                onChange={(e) => setLanguage(e.target.value)}
+                onChange={(e) => {
+                  playUIClick();
+                  setLanguage(e.target.value);
+                }}
                 className="w-full p-2 border-0 rounded-md bg-white/50 focus:ring-2 focus:ring-sky-400"
               >
                 {availableLanguages.map(({ code, flag, name }) => (
@@ -375,7 +404,10 @@ const App: React.FC = () => {
                 min={difficulty === 'hard' ? 12 : 5}
                 max={ALL_ITEMS.length}
                 value={emojiCount}
-                onChange={(e) => setEmojiCount(parseInt(e.target.value, 10))}
+                onChange={(e) => {
+                  playUIClick();
+                  setEmojiCount(parseInt(e.target.value, 10));
+                }}
                 className="w-full h-2 bg-white/50 rounded-lg appearance-none cursor-pointer"
               />
             </div>
@@ -385,7 +417,10 @@ const App: React.FC = () => {
                 {(['easy', 'medium', 'hard'] as const).map((level) => (
                   <button
                     key={level}
-                    onClick={() => setDifficulty(level)}
+                    onClick={() => {
+                      playUIClick();
+                      setDifficulty(level);
+                    }}
                     className={`p-2 rounded-md text-sm font-semibold transition-colors ${
                       difficulty === level
                         ? 'bg-sky-500 text-white shadow'
