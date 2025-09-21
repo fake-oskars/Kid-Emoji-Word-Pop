@@ -1,5 +1,7 @@
 
+
 let audioContext: AudioContext | null = null;
+let hasAudioBeenUnlocked = false;
 
 const getAudioContext = (): AudioContext | null => {
   if (typeof window !== 'undefined') {
@@ -16,10 +18,38 @@ const getAudioContext = (): AudioContext | null => {
   return null;
 };
 
+// This function MUST be called from a direct user interaction (e.g., a click or touchstart event).
 export const initializeAudio = (): void => {
+  if (hasAudioBeenUnlocked) {
+    return;
+  }
+
   const context = getAudioContext();
-  if (context && context.state === 'suspended') {
-    context.resume().catch(e => console.error("Audio context resume failed: ", e));
+  if (!context) {
+    return;
+  }
+  
+  const playSilentSound = () => {
+    // Create an empty buffer and play it.
+    // This is a common workaround to unlock the Web Audio API on iOS Safari.
+    const buffer = context.createBuffer(1, 1, 22050);
+    const source = context.createBufferSource();
+    source.buffer = buffer;
+    source.connect(context.destination);
+    source.start(0);
+  };
+
+  if (context.state === 'suspended') {
+    context.resume().then(() => {
+      console.log("AudioContext resumed successfully.");
+      playSilentSound();
+      hasAudioBeenUnlocked = true;
+    }).catch(e => console.error("Audio context resume failed: ", e));
+  } else {
+    // If the context is not suspended, we might still need to play the silent sound
+    // to ensure audio works on all iOS versions.
+    playSilentSound();
+    hasAudioBeenUnlocked = true;
   }
 };
 
