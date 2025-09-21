@@ -249,21 +249,21 @@ const GameSelection: React.FC<{ onSelect: (mode: 'name-it' | 'find-it') => void;
   
   return (
     <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-gray-50 to-gray-200 p-4 select-none">
-      <h1 className="text-5xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-amber-500 mb-12" style={{ textShadow: '2px 2px 8px rgba(0,0,0,0.1)' }}>{t('selectGame')}</h1>
-      <div className="flex flex-col md:flex-row gap-8 md:gap-12">
+      <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-amber-500 mb-8" style={{ textShadow: '2px 2px 8px rgba(0,0,0,0.1)' }}>{t('selectGame')}</h1>
+      <div className="flex flex-col md:flex-row gap-6 md:gap-10">
         <button
           onClick={() => handleSelection('name-it')}
-          className="group relative flex flex-col items-center justify-center w-64 h-72 md:w-72 md:h-80 bg-gradient-to-br from-sky-400 to-blue-600 rounded-3xl shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl active:scale-95 focus:outline-none focus:ring-4 ring-sky-300 ring-offset-2 overflow-hidden"
+          className="group relative flex flex-col items-center justify-center w-48 h-56 sm:w-56 sm:h-64 md:w-64 md:h-72 bg-gradient-to-br from-sky-400 to-blue-600 rounded-3xl shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl active:scale-95 focus:outline-none focus:ring-4 ring-sky-300 ring-offset-2 overflow-hidden"
         >
-          <span className="text-8xl md:text-9xl mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-[-6deg]">🎈</span>
-          <span className="text-3xl md:text-4xl font-bold text-white tracking-wide" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}>{t('popItGameTitle')}</span>
+          <span className="text-6xl sm:text-7xl md:text-8xl mb-2 sm:mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-[-6deg]">🎈</span>
+          <span className="text-2xl sm:text-3xl font-bold text-white tracking-wide" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}>{t('popItGameTitle')}</span>
         </button>
         <button
           onClick={() => handleSelection('find-it')}
-          className="group relative flex flex-col items-center justify-center w-64 h-72 md:w-72 md:h-80 bg-gradient-to-br from-amber-400 to-orange-600 rounded-3xl shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl active:scale-95 focus:outline-none focus:ring-4 ring-amber-300 ring-offset-2 overflow-hidden"
+          className="group relative flex flex-col items-center justify-center w-48 h-56 sm:w-56 sm:h-64 md:w-64 md:h-72 bg-gradient-to-br from-amber-400 to-orange-600 rounded-3xl shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl active:scale-95 focus:outline-none focus:ring-4 ring-amber-300 ring-offset-2 overflow-hidden"
         >
-          <span className="text-8xl md:text-9xl mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-[6deg]">🔍</span>
-          <span className="text-3xl md:text-4xl font-bold text-white tracking-wide" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}>{t('findItGameTitle')}</span>
+          <span className="text-6xl sm:text-7xl md:text-8xl mb-2 sm:mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-[6deg]">🔍</span>
+          <span className="text-2xl sm:text-3xl font-bold text-white tracking-wide" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}>{t('findItGameTitle')}</span>
         </button>
       </div>
     </div>
@@ -299,6 +299,22 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('toddlerPopDifficulty', difficulty);
   }, [difficulty]);
+  
+  // Ensure audio context is unlocked by the first user interaction.
+  useEffect(() => {
+    const initAudioOnFirstInteraction = () => {
+      initializeAudio();
+    };
+
+    window.addEventListener('touchstart', initAudioOnFirstInteraction, { once: true });
+    window.addEventListener('click', initAudioOnFirstInteraction, { once: true });
+
+    return () => {
+      window.removeEventListener('touchstart', initAudioOnFirstInteraction);
+      window.removeEventListener('click', initAudioOnFirstInteraction);
+    };
+  }, []);
+
 
   useEffect(() => {
     // Enforce minimum item count for hard difficulty
@@ -308,7 +324,6 @@ const App: React.FC = () => {
   }, [difficulty, emojiCount]);
   
   const handleSelectGame = (mode: 'name-it' | 'find-it') => {
-    initializeAudio();
     setGameMode(mode);
   };
 

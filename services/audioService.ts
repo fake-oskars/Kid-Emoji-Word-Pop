@@ -19,7 +19,7 @@ const getAudioContext = (): AudioContext | null => {
 export const initializeAudio = (): void => {
   const context = getAudioContext();
   if (context && context.state === 'suspended') {
-    context.resume();
+    context.resume().catch(e => console.error("Audio context resume failed: ", e));
   }
 };
 
