@@ -1,57 +1,31 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ALL_ITEMS, translations, availableLanguages } from './constants';
 import { playSound, initializeAudio } from './services/audioService';
 import type { Item } from './types';
 
-const App: React.FC = () => {
+// --- Helper Functions ---
+const shuffleArray = (array: any[]) => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
+// --- Game Components ---
+
+// Game 1: Name It! (previously PopItGame)
+const NameItGame: React.FC<{ activeItems: Item[]; t: (key: string) => string; onBack: () => void; }> = ({ activeItems, t, onBack }) => {
   const [currentItemIndex, setCurrentItemIndex] = useState(0);
   const [isPopping, setIsPopping] = useState(false);
-  const [gameStarted, setGameStarted] = useState(false);
-  const [startEmoji, setStartEmoji] = useState('👋');
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  // --- Settings state with localStorage ---
-  const [language, setLanguage] = useState<string>(() => {
-    return localStorage.getItem('toddlerPopLanguage') || 'en';
-  });
-  const [emojiCount, setEmojiCount] = useState<number>(() => {
-    const savedCount = localStorage.getItem('toddlerPopEmojiCount');
-    return savedCount ? parseInt(savedCount, 10) : 10;
-  });
-
-  const [activeItems, setActiveItems] = useState<Item[]>([]);
-
-  // Persist settings to localStorage
-  useEffect(() => {
-    localStorage.setItem('toddlerPopLanguage', language);
-  }, [language]);
 
   useEffect(() => {
-    localStorage.setItem('toddlerPopEmojiCount', emojiCount.toString());
-  }, [emojiCount]);
-
-  // Create and shuffle the active item list when emojiCount changes
-  useEffect(() => {
-    const shuffleArray = (array: Item[]) => {
-      const shuffled = [...array];
-      for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-      }
-      return shuffled;
-    };
-    const newActiveItems = shuffleArray(ALL_ITEMS).slice(0, emojiCount);
-    setActiveItems(newActiveItems);
-
-    if (newActiveItems.length > 0) {
-      setCurrentItemIndex(Math.floor(Math.random() * newActiveItems.length));
-      setStartEmoji(newActiveItems[Math.floor(Math.random() * newActiveItems.length)].emoji);
+    if (activeItems.length > 0) {
+      setCurrentItemIndex(Math.floor(Math.random() * activeItems.length));
     }
-  }, [emojiCount]);
-
-  const currentItem = activeItems[currentItemIndex] || ALL_ITEMS[0];
-  const { emoji, color, textColor, name } = currentItem;
-
+  }, [activeItems]);
+  
   const handleInteraction = useCallback(() => {
     if (isPopping || activeItems.length === 0) return;
 
@@ -70,46 +44,199 @@ const App: React.FC = () => {
     }, 300);
   }, [isPopping, currentItemIndex, activeItems]);
 
-  const handleStart = () => {
+  const currentItem = activeItems[currentItemIndex] || ALL_ITEMS[0];
+  const { emoji, color, textColor, name } = currentItem;
+
+  return (
+    <div
+      className={`w-full h-full flex flex-col items-center justify-center transition-colors duration-500 ease-in-out select-none cursor-pointer ${color}`}
+      onClick={handleInteraction}
+      onTouchStart={handleInteraction}
+    >
+      <BackButton onClick={onBack} />
+      <div className="relative flex flex-col items-center flex-grow justify-center">
+        <div
+          className={`text-[10rem] md:text-[14rem] transition-transform duration-300 ease-in-out drop-shadow-2xl ${
+            isPopping ? 'scale-110' : 'scale-100'
+          }`}
+          style={{ textShadow: '4px 4px 8px rgba(0,0,0,0.2)' }}
+        >
+          {emoji}
+        </div>
+        <div
+          className={`text-5xl md:text-7xl font-bold mt-4 transition-opacity duration-300 ${textColor} opacity-100`}
+          style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.2)' }}
+        >
+          {t(name)}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Game 2: Find It!
+const OPTIONS_COUNT = 4;
+const FindItGame: React.FC<{ activeItems: Item[]; t: (key: string) => string; onBack: () => void; }> = ({ activeItems, t, onBack }) => {
+    const [target, setTarget] = useState<Item | null>(null);
+    const [options, setOptions] = useState<Item[]>([]);
+    const [feedback, setFeedback] = useState<'idle' | 'correct' | 'incorrect'>('idle');
+
+    const generateChallenge = useCallback(() => {
+        if (activeItems.length < OPTIONS_COUNT) return;
+        
+        const shuffled = shuffleArray(activeItems);
+        const newTarget = shuffled[0];
+        const otherOptions = shuffled.slice(1, OPTIONS_COUNT);
+        const allOptions = shuffleArray([newTarget, ...otherOptions]);
+        
+        setTarget(newTarget);
+        setOptions(allOptions);
+        setFeedback('idle');
+    }, [activeItems]);
+
+    useEffect(() => {
+        generateChallenge();
+    }, [generateChallenge]);
+
+    const handleOptionClick = (item: Item) => {
+        if (feedback !== 'idle' || !target) return;
+
+        if (item.name === target.name) {
+            playSound(target.soundFrequency);
+            setFeedback('correct');
+            setTimeout(generateChallenge, 1200);
+        } else {
+            playSound(100, 0.1);
+            setFeedback('incorrect');
+            setTimeout(() => setFeedback('idle'), 500);
+        }
+    };
+    
+    if (activeItems.length < OPTIONS_COUNT) {
+      return (
+        <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 p-4 text-center">
+          <BackButton onClick={onBack} />
+          <h2 className="text-2xl text-gray-700">Need more items to play!</h2>
+          <p className="text-gray-500">Open settings and set the number of items to {OPTIONS_COUNT} or more.</p>
+        </div>
+      );
+    }
+    
+    if (!target) return null; // Loading state
+
+    return (
+        <div className={`w-full h-full flex flex-col items-center justify-center transition-colors duration-300 select-none p-4 pt-20 ${target.color}`}>
+            <BackButton onClick={onBack} />
+            <div className={`text-center mb-8 transition-transform duration-300 ${feedback === 'correct' ? 'scale-110' : ''}`}>
+                <h2 className={`text-4xl md:text-6xl font-bold ${target.textColor}`} style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.2)' }}>
+                    {t('findThe')} {t(target.name)}?
+                </h2>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 md:gap-8 w-full max-w-lg mx-auto">
+                {options.map((item) => (
+                    <button
+                        key={item.name}
+                        onClick={() => handleOptionClick(item)}
+                        className={`aspect-square flex items-center justify-center bg-white/30 rounded-3xl shadow-lg transition-transform duration-200 active:scale-90
+                                    ${feedback === 'incorrect' && item.name !== target.name ? 'animate-pulse' : ''}
+                                    ${feedback === 'correct' && item.name === target.name ? 'scale-110 ring-4 ring-white' : ''}
+                                    `}
+                    >
+                        <span className="text-7xl md:text-9xl drop-shadow-lg">{item.emoji}</span>
+                    </button>
+                ))}
+            </div>
+            
+            {feedback === 'correct' && (
+                <div className="absolute inset-0 bg-black/10 flex items-center justify-center pointer-events-none">
+                    <div className="text-[12rem] animate-bounce">🎉</div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+
+// Game Selection Screen
+const GameSelection: React.FC<{ onSelect: (mode: 'name-it' | 'find-it') => void; t: (key: string) => string; }> = ({ onSelect, t }) => {
+  return (
+    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-gray-50 to-gray-200 p-4 select-none">
+      <h1 className="text-5xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-amber-500 mb-12" style={{ textShadow: '2px 2px 8px rgba(0,0,0,0.1)' }}>{t('selectGame')}</h1>
+      <div className="flex flex-col md:flex-row gap-8 md:gap-12">
+        <button
+          onClick={() => onSelect('name-it')}
+          className="group relative flex flex-col items-center justify-center w-64 h-72 md:w-72 md:h-80 bg-gradient-to-br from-sky-400 to-blue-600 rounded-3xl shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl active:scale-95 focus:outline-none focus:ring-4 ring-sky-300 ring-offset-2 overflow-hidden"
+        >
+          <span className="text-8xl md:text-9xl mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-[-6deg]">🎈</span>
+          <span className="text-3xl md:text-4xl font-bold text-white tracking-wide" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}>{t('popItGameTitle')}</span>
+        </button>
+        <button
+          onClick={() => onSelect('find-it')}
+          className="group relative flex flex-col items-center justify-center w-64 h-72 md:w-72 md:h-80 bg-gradient-to-br from-amber-400 to-orange-600 rounded-3xl shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl active:scale-95 focus:outline-none focus:ring-4 ring-amber-300 ring-offset-2 overflow-hidden"
+        >
+          <span className="text-8xl md:text-9xl mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-[6deg]">🔍</span>
+          <span className="text-3xl md:text-4xl font-bold text-white tracking-wide" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}>{t('findItGameTitle')}</span>
+        </button>
+      </div>
+    </div>
+  );
+};
+
+
+// Main App Component
+const App: React.FC = () => {
+  const [gameMode, setGameMode] = useState<'name-it' | 'find-it' | null>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  // --- Settings state with localStorage ---
+  const [language, setLanguage] = useState<string>(() => localStorage.getItem('toddlerPopLanguage') || 'lv');
+  const [emojiCount, setEmojiCount] = useState<number>(() => {
+    const savedCount = localStorage.getItem('toddlerPopEmojiCount');
+    return savedCount ? parseInt(savedCount, 10) : 10;
+  });
+
+  const activeItems = useMemo(() => {
+    return shuffleArray(ALL_ITEMS).slice(0, emojiCount);
+  }, [emojiCount]);
+
+  useEffect(() => {
+    localStorage.setItem('toddlerPopLanguage', language);
+  }, [language]);
+
+  useEffect(() => {
+    localStorage.setItem('toddlerPopEmojiCount', emojiCount.toString());
+  }, [emojiCount]);
+  
+  const handleSelectGame = (mode: 'name-it' | 'find-it') => {
     initializeAudio();
-    setGameStarted(true);
+    setGameMode(mode);
+  };
+
+  const handleGoBack = () => {
+    setGameMode(null);
   };
 
   const t = (key: string) => translations[language]?.[key] || translations['en'][key] || key;
   
-  const mainScreenAction = gameStarted ? handleInteraction : handleStart;
+  const renderContent = () => {
+    if (!gameMode) {
+      return <GameSelection onSelect={handleSelectGame} t={t} />;
+    }
+
+    if (gameMode === 'name-it') {
+      return <NameItGame activeItems={activeItems} t={t} onBack={handleGoBack} />;
+    }
+
+    if (gameMode === 'find-it') {
+      return <FindItGame activeItems={activeItems} t={t} onBack={handleGoBack} />;
+    }
+  };
+
 
   return (
     <>
-      <div
-        className={`w-full h-full flex flex-col items-center justify-center transition-colors duration-500 ease-in-out select-none cursor-pointer ${gameStarted ? color : 'bg-gray-100'}`}
-        onClick={mainScreenAction}
-        onTouchStart={mainScreenAction}
-      >
-        {!gameStarted ? (
-          <div className="flex flex-col items-center justify-center text-center">
-            <div className="text-8xl mb-4 animate-bounce">{startEmoji}</div>
-            <h1 className="text-4xl md:text-6xl font-bold text-gray-700">{t('startGame')}</h1>
-          </div>
-        ) : (
-          <div className="relative flex flex-col items-center flex-grow justify-center">
-            <div
-              className={`text-[10rem] md:text-[14rem] transition-transform duration-300 ease-in-out drop-shadow-2xl ${
-                isPopping ? 'scale-110' : 'scale-100'
-              }`}
-              style={{ textShadow: '4px 4px 8px rgba(0,0,0,0.2)' }}
-            >
-              {emoji}
-            </div>
-            <div
-              className={`text-5xl md:text-7xl font-bold mt-4 transition-opacity duration-300 ${textColor} opacity-100`}
-              style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.2)' }}
-            >
-              {t(name)}
-            </div>
-          </div>
-        )}
-      </div>
+      {renderContent()}
 
       {/* Settings Button */}
       <button
@@ -143,7 +270,6 @@ const App: React.FC = () => {
           </div>
           
           <div className="space-y-4">
-            {/* Language Selector */}
             <div>
               <label htmlFor="language-select" className="block text-sm font-medium mb-1">{t('language')}</label>
               <select
@@ -159,8 +285,6 @@ const App: React.FC = () => {
                 ))}
               </select>
             </div>
-
-            {/* Emoji Count Slider */}
             <div>
               <label htmlFor="emoji-count-slider" className="block text-sm font-medium mb-1">{t('itemCount')} ({emojiCount})</label>
               <input
@@ -179,5 +303,16 @@ const App: React.FC = () => {
     </>
   );
 };
+
+const BackButton: React.FC<{onClick: () => void}> = ({onClick}) => (
+    <button
+        onClick={(e) => { e.stopPropagation(); onClick(); }}
+        className="absolute top-4 left-4 text-3xl p-2 z-20 bg-white/30 rounded-full hover:bg-white/50 transition-transform duration-200 active:scale-90"
+        aria-label="Go back"
+    >
+      ⬅️
+    </button>
+);
+
 
 export default App;
