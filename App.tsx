@@ -23,7 +23,30 @@ const shuffleArray = (array: any[]) => {
   return shuffled;
 };
 
+const getOptimalGridClass = (itemCount: number) => {
+  // Determine optimal grid layout based on item count and screen size
+  if (itemCount <= 2) return 'grid-cols-2 grid-rows-1';
+  if (itemCount <= 4) return 'grid-cols-2 grid-rows-2';
+  if (itemCount <= 6) return 'grid-cols-2 sm:grid-cols-3 grid-rows-3 sm:grid-rows-2';
+  if (itemCount <= 9) return 'grid-cols-3 grid-rows-3';
+  if (itemCount <= 12) return 'grid-cols-3 sm:grid-cols-4 grid-rows-4 sm:grid-rows-3';
+  return 'grid-cols-4 sm:grid-cols-5 grid-rows-4 sm:grid-rows-3';
+};
+
 // --- Game Components ---
+
+// Simple Stats Component
+const SimpleStats: React.FC<{ correct: number; total: number; t: (key: string) => string }> = ({ correct, total, t }) => {
+    if (total === 0) return null;
+    
+    return (
+        <div className="bg-white/80 backdrop-blur-sm rounded-full px-4 py-2 shadow-lg border border-white/40">
+            <div className="text-sm font-semibold text-gray-800">
+                {correct} {t('correct')} • {total} {t('total')}
+            </div>
+        </div>
+    );
+};
 
 // Game 1: Name It! (previously PopItGame)
 const NameItGame: React.FC<{ activeItems: Item[]; t: (key: string) => string; onBack: () => void; }> = ({ activeItems, t, onBack }) => {
@@ -63,19 +86,19 @@ const NameItGame: React.FC<{ activeItems: Item[]; t: (key: string) => string; on
       onClick={handleInteraction}
       onTouchStart={handleInteraction}
     >
-      <BackButton onClick={onBack} />
+      <div className="absolute top-4 left-4 z-20">
+        <BackButton onClick={onBack} />
+      </div>
       <div className="relative flex flex-col items-center flex-grow justify-center">
         <div
-          className={`text-[10rem] md:text-[14rem] transition-transform duration-300 ease-in-out drop-shadow-2xl ${
+          className={`text-[10rem] md:text-[14rem] transition-transform duration-300 ease-in-out ${
             isPopping ? 'scale-110' : 'scale-100'
           }`}
-          style={{ textShadow: '4px 4px 8px rgba(0,0,0,0.2)' }}
         >
           {emoji}
         </div>
         <div
           className={`text-5xl md:text-7xl font-bold mt-4 transition-opacity duration-300 ${textColor} opacity-100`}
-          style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.2)' }}
         >
           {t(name)}
         </div>
@@ -92,6 +115,7 @@ const FindItGame: React.FC<{ activeItems: Item[]; t: (key: string) => string; on
     const [feedback, setFeedback] = useState<'idle' | 'correct' | 'incorrect'>('idle');
     const [hardModePositions, setHardModePositions] = useState<React.CSSProperties[]>([]);
     const [incorrectlyClicked, setIncorrectlyClicked] = useState<string | null>(null);
+    const [stats, setStats] = useState({ correct: 0, total: 0 });
 
     const optionsCount = useMemo(() => {
       return { easy: 4, medium: 6, hard: 12 }[difficulty];
@@ -162,11 +186,13 @@ const FindItGame: React.FC<{ activeItems: Item[]; t: (key: string) => string; on
             // Play the item sound slightly after the success chime starts
             setTimeout(() => playSound(target.soundFrequency), 200);
             setFeedback('correct');
+            setStats(prev => ({ correct: prev.correct + 1, total: prev.total + 1 }));
             setTimeout(generateChallenge, 1200);
         } else {
             playIncorrectSound();
             setFeedback('incorrect');
             setIncorrectlyClicked(item.name);
+            setStats(prev => ({ ...prev, total: prev.total + 1 }));
             setTimeout(() => {
               setFeedback('idle');
               setIncorrectlyClicked(null);
@@ -190,9 +216,13 @@ const FindItGame: React.FC<{ activeItems: Item[]; t: (key: string) => string; on
 
     return (
         <div className={`w-full h-full flex flex-col items-center justify-start transition-colors duration-300 select-none p-4 pt-20 ${containerClass}`}>
-            <BackButton onClick={onBack} />
-            <div className={`text-center mb-8 transition-transform duration-300 z-10 ${feedback === 'correct' ? 'scale-110' : ''} ${difficulty === 'hard' ? 'bg-white/60 backdrop-blur-sm rounded-full px-6 py-2 shadow-lg' : ''}`}>
-                <h2 className={`text-4xl md:text-6xl font-bold ${difficulty === 'hard' ? 'text-sky-800' : target.textColor}`} style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.1)' }}>
+            <div className="absolute top-4 left-0 right-0 flex justify-between items-center px-4 z-20">
+                <BackButton onClick={onBack} />
+                <SimpleStats correct={stats.correct} total={stats.total} t={t} />
+                <div className="w-12"></div> {/* Spacer for settings button alignment */}
+            </div>
+            <div className={`text-center mb-8 transition-transform duration-300 z-10 ${feedback === 'correct' ? 'scale-110' : ''}`}>
+                <h2 className={`text-4xl md:text-6xl font-bold ${target.textColor}`}>
                     {t('findThe')} {t(target.name)}?
                 </h2>
             </div>
@@ -203,28 +233,28 @@ const FindItGame: React.FC<{ activeItems: Item[]; t: (key: string) => string; on
                         <button
                             key={item.name}
                             onClick={() => handleOptionClick(item)}
-                            className={`absolute transition-transform duration-200 active:scale-90 will-change-transform
-                                        ${incorrectlyClicked === item.name ? 'animate-shake' : ''}
+                            className={`absolute transition-all duration-200 active:scale-90 will-change-transform
+                                        ${incorrectlyClicked === item.name ? 'animate-shake bg-red-200/60 backdrop-blur-sm rounded-full p-2' : ''}
                                         ${feedback === 'correct' && item.name === target.name ? 'scale-[1.3] ring-4 ring-white rounded-full' : ''}
                                         `}
                             style={hardModePositions[index]}
                         >
-                            <span className="text-6xl md:text-8xl drop-shadow-lg">{item.emoji}</span>
+                            <span className="text-6xl md:text-8xl">{item.emoji}</span>
                         </button>
                     ))}
                 </div>
             ) : (
-                <div className={`grid ${difficulty === 'medium' ? 'grid-cols-2' : 'grid-cols-2'} gap-4 md:gap-8 w-full max-w-lg mx-auto`}>
+                <div className={`grid gap-2 sm:gap-3 md:gap-4 w-full h-full max-w-6xl mx-auto px-4 sm:px-6 py-4 ${getOptimalGridClass(optionsCount)}`}>
                     {options.map((item) => (
                         <button
                             key={item.name}
                             onClick={() => handleOptionClick(item)}
-                            className={`aspect-square flex items-center justify-center bg-white/30 rounded-3xl shadow-lg transition-transform duration-200 active:scale-90
-                                        ${incorrectlyClicked === item.name ? 'animate-shake' : ''}
+                            className={`w-full h-full flex items-center justify-center rounded-2xl sm:rounded-3xl shadow-lg transition-all duration-200 active:scale-90
+                                        ${incorrectlyClicked === item.name ? 'animate-shake bg-red-200/60' : 'bg-white/30'}
                                         ${feedback === 'correct' && item.name === target.name ? 'scale-110 ring-4 ring-white' : ''}
                                         `}
                         >
-                            <span className="text-7xl md:text-9xl drop-shadow-lg">{item.emoji}</span>
+                            <span className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl">{item.emoji}</span>
                         </button>
                     ))}
                 </div>
@@ -242,30 +272,117 @@ const FindItGame: React.FC<{ activeItems: Item[]; t: (key: string) => string; on
 
 // Game Selection Screen
 const GameSelection: React.FC<{ onSelect: (mode: 'name-it' | 'find-it') => void; t: (key: string) => string; }> = ({ onSelect, t }) => {
+  const [currentEmoji, setCurrentEmoji] = useState(0);
+  const emojis = ['🐄', '🍎', '🚗', '🎈', '🌟'];
+  
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentEmoji(prev => (prev + 1) % emojis.length);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [emojis.length]);
+
   const handleSelection = (mode: 'name-it' | 'find-it') => {
     playTransitionSound();
     setTimeout(() => onSelect(mode), 150);
   };
   
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-gray-50 to-gray-200 p-4 select-none">
-      <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-amber-500 mb-8" style={{ textShadow: '2px 2px 8px rgba(0,0,0,0.1)' }}>{t('selectGame')}</h1>
-      <div className="flex flex-col md:flex-row gap-6 md:gap-10">
+    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 p-4 select-none">
+      {/* Clean Title */}
+      <div className="text-center mb-8">
+        <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          {t('selectGame')}
+        </h1>
+      </div>
+
+      {/* Game Cards */}
+      <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 w-full max-w-4xl flex-1 max-h-[70vh]">
+        
+        {/* Name It! Game Card - Changing Emojis */}
         <button
           onClick={() => handleSelection('name-it')}
-          className="group relative flex flex-col items-center justify-center w-48 h-56 sm:w-56 sm:h-64 md:w-64 md:h-72 bg-gradient-to-br from-sky-400 to-blue-600 rounded-3xl shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl active:scale-95 focus:outline-none focus:ring-4 ring-sky-300 ring-offset-2 overflow-hidden"
+          className="group flex-1 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-3xl p-8 sm:p-10 transition-all duration-300 hover:scale-105 hover:shadow-2xl active:scale-95 focus:outline-none focus:ring-4 focus:ring-blue-300 shadow-xl flex flex-col items-center justify-center min-h-[200px] sm:min-h-[250px]"
         >
-          <span className="text-6xl sm:text-7xl md:text-8xl mb-2 sm:mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-[-6deg]">🎈</span>
-          <span className="text-2xl sm:text-3xl font-bold text-white tracking-wide" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}>{t('popItGameTitle')}</span>
+          {/* Animated Emoji Container */}
+          <div className="w-28 h-28 sm:w-32 sm:h-32 mx-auto mb-6 sm:mb-8 flex items-center justify-center relative">
+            <span 
+              className="text-7xl sm:text-8xl transition-all duration-500 transform" 
+              key={currentEmoji}
+              style={{
+                animation: 'fadeInScale 0.5s ease-in-out'
+              }}
+            >
+              {emojis[currentEmoji]}
+            </span>
+          </div>
+          
+          {/* Title */}
+          <h2 className="text-2xl sm:text-3xl font-bold text-white text-center">
+            {t('popItGameTitle')}
+          </h2>
         </button>
+
+        {/* Find It! Game Card - Train with Magnifying Glass */}
         <button
           onClick={() => handleSelection('find-it')}
-          className="group relative flex flex-col items-center justify-center w-48 h-56 sm:w-56 sm:h-64 md:w-64 md:h-72 bg-gradient-to-br from-amber-400 to-orange-600 rounded-3xl shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl active:scale-95 focus:outline-none focus:ring-4 ring-amber-300 ring-offset-2 overflow-hidden"
+          className="group flex-1 bg-gradient-to-br from-orange-500 to-pink-500 rounded-3xl p-8 sm:p-10 transition-all duration-300 hover:scale-105 hover:shadow-2xl active:scale-95 focus:outline-none focus:ring-4 focus:ring-orange-300 shadow-xl flex flex-col items-center justify-center min-h-[200px] sm:min-h-[250px]"
         >
-          <span className="text-6xl sm:text-7xl md:text-8xl mb-2 sm:mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-[6deg]">🔍</span>
-          <span className="text-2xl sm:text-3xl font-bold text-white tracking-wide" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}>{t('findItGameTitle')}</span>
+          {/* Animated Icon Container */}
+          <div className="w-28 h-28 sm:w-32 sm:h-32 mx-auto mb-6 sm:mb-8 flex items-center justify-center relative">
+            {/* Train Emoji */}
+            <span className="text-7xl sm:text-8xl">🚂</span>
+            
+            {/* Animated Magnifying Glass */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="relative w-28 h-28 sm:w-32 sm:h-32">
+                <span 
+                  className="absolute text-4xl sm:text-5xl orbit-animation top-1/2 left-1/2"
+                  style={{
+                    transformOrigin: '-32px 0px',
+                    marginTop: '-24px',
+                    marginLeft: '-24px'
+                  }}
+                >
+                  🔍
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          {/* Title */}
+          <h2 className="text-2xl sm:text-3xl font-bold text-white text-center">
+            {t('findItGameTitle')}
+          </h2>
         </button>
       </div>
+      
+      {/* Custom Animations */}
+      <style jsx>{`
+        @keyframes orbit {
+          0% {
+            transform: rotate(0deg) translateX(48px) rotate(0deg);
+          }
+          100% {
+            transform: rotate(360deg) translateX(48px) rotate(-360deg);
+          }
+        }
+        
+        @keyframes fadeInScale {
+          0% {
+            opacity: 0;
+            transform: scale(0.8);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        
+        .orbit-animation {
+          animation: orbit 5s linear infinite;
+        }
+      `}</style>
     </div>
   );
 };
@@ -364,7 +481,7 @@ const App: React.FC = () => {
           }
           setIsMenuOpen(!isMenuOpen);
         }}
-        className="absolute top-4 right-4 text-3xl p-2 z-40 bg-white/30 rounded-full hover:bg-white/50 transition-transform duration-200 active:scale-90"
+        className="absolute top-4 right-4 w-12 h-12 flex items-center justify-center text-3xl z-40 bg-white/30 rounded-full hover:bg-white/50 transition-transform duration-200 active:scale-90"
         aria-label="Open settings"
       >
         ⚙️
@@ -457,7 +574,7 @@ const App: React.FC = () => {
 const BackButton: React.FC<{onClick: () => void}> = ({onClick}) => (
     <button
         onClick={(e) => { e.stopPropagation(); onClick(); }}
-        className="absolute top-4 left-4 text-3xl p-2 z-20 bg-white/30 rounded-full hover:bg-white/50 transition-transform duration-200 active:scale-90"
+        className="w-12 h-12 flex items-center justify-center text-3xl bg-white/30 rounded-full hover:bg-white/50 transition-transform duration-200 active:scale-90"
         aria-label="Go back"
     >
       ⬅️

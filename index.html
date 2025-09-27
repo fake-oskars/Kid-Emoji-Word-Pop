@@ -2,10 +2,13 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#f9fafb">
     <title>Toddler Animal Pop</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="importmap">
       {
@@ -25,6 +28,33 @@
         overflow: hidden;
         position: fixed;
         background-color: #f9fafb;
+        touch-action: none;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        zoom: 1;
+        -moz-transform: scale(1);
+        -webkit-transform: scale(1);
+        transform: scale(1);
+        -webkit-user-zoom: fixed;
+        -webkit-text-size-adjust: none;
+        -moz-text-size-adjust: none;
+        -ms-text-size-adjust: none;
+        text-size-adjust: none;
+        font-family: 'Dela Gothic One', cursive;
+      }
+      
+      /* Prevent zoom on desktop */
+      * {
+        -webkit-user-zoom: fixed;
+        -webkit-text-size-adjust: 100%;
+        -moz-text-size-adjust: 100%;
+        -ms-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+        font-family: 'Dela Gothic One', cursive;
       }
       @keyframes shake {
         10%, 90% { transform: translate3d(-1px, 0, 0); }
@@ -40,6 +70,49 @@
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
+    <script>
+      // Prevent zoom gestures
+      document.addEventListener('gesturestart', function (e) {
+        e.preventDefault();
+      });
+      
+      document.addEventListener('gesturechange', function (e) {
+        e.preventDefault();
+      });
+      
+      document.addEventListener('gestureend', function (e) {
+        e.preventDefault();
+      });
+      
+      // Prevent wheel zoom
+      document.addEventListener('wheel', function (e) {
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+        }
+      }, { passive: false });
+      
+      // Prevent keyboard zoom
+      document.addEventListener('keydown', function (e) {
+        if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '0')) {
+          e.preventDefault();
+        }
+      });
+      
+      // Prevent touch zoom
+      let lastTouchEnd = 0;
+      document.addEventListener('touchend', function (event) {
+        const now = (new Date()).getTime();
+        if (now - lastTouchEnd <= 300) {
+          event.preventDefault();
+        }
+        lastTouchEnd = now;
+      }, false);
+      
+      // Prevent context menu
+      document.addEventListener('contextmenu', function (e) {
+        e.preventDefault();
+      });
+    </script>
     <script type="module" src="/index.tsx"></script>
   </body>
 </html>
