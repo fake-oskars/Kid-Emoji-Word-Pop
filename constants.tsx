@@ -50,6 +50,54 @@ export const ALL_ITEMS: Item[] = [
   { name: 'Guitar', emoji: '🎸', soundFrequency: 260, color: 'bg-amber-300', textColor: 'text-amber-900' },
   { name: 'Piano', emoji: '🎹', soundFrequency: 490, color: 'bg-gray-300', textColor: 'text-gray-900' },
   { name: 'Drum', emoji: '🥁', soundFrequency: 190, color: 'bg-cyan-300', textColor: 'text-cyan-900' },
+
+  // More Animals
+  { name: 'Bear', emoji: '🐻', soundFrequency: 170, color: 'bg-amber-400', textColor: 'text-amber-900' },
+  { name: 'Tiger', emoji: '🐅', soundFrequency: 210, color: 'bg-orange-400', textColor: 'text-orange-900' },
+  { name: 'Rabbit', emoji: '🐰', soundFrequency: 360, color: 'bg-pink-300', textColor: 'text-pink-900' },
+  { name: 'Duck', emoji: '🦆', soundFrequency: 290, color: 'bg-yellow-400', textColor: 'text-yellow-900' },
+  { name: 'Frog', emoji: '🐸', soundFrequency: 380, color: 'bg-green-400', textColor: 'text-green-900' },
+  { name: 'Fish', emoji: '🐟', soundFrequency: 240, color: 'bg-blue-300', textColor: 'text-blue-900' },
+
+  // More Food
+  { name: 'Pizza', emoji: '🍕', soundFrequency: 390, color: 'bg-orange-300', textColor: 'text-orange-900' },
+  { name: 'Cake', emoji: '🍰', soundFrequency: 410, color: 'bg-pink-200', textColor: 'text-pink-800' },
+  { name: 'Ice Cream', emoji: '🍦', soundFrequency: 430, color: 'bg-blue-200', textColor: 'text-blue-800' },
+  { name: 'Cookie', emoji: '🍪', soundFrequency: 350, color: 'bg-amber-200', textColor: 'text-amber-800' },
+  { name: 'Sandwich', emoji: '🥪', soundFrequency: 320, color: 'bg-yellow-300', textColor: 'text-yellow-900' },
+  { name: 'Hot Dog', emoji: '🌭', soundFrequency: 340, color: 'bg-red-300', textColor: 'text-red-900' },
+
+  // More Objects
+  { name: 'House', emoji: '🏠', soundFrequency: 180, color: 'bg-red-200', textColor: 'text-red-800' },
+  { name: 'Heart', emoji: '❤️', soundFrequency: 440, color: 'bg-red-400', textColor: 'text-red-100' },
+  { name: 'Crown', emoji: '👑', soundFrequency: 520, color: 'bg-yellow-400', textColor: 'text-yellow-900' },
+  { name: 'Key', emoji: '🗝️', soundFrequency: 300, color: 'bg-yellow-300', textColor: 'text-yellow-900' },
+  { name: 'Clock', emoji: '🕐', soundFrequency: 280, color: 'bg-blue-300', textColor: 'text-blue-900' },
+  { name: 'Phone', emoji: '📱', soundFrequency: 460, color: 'bg-gray-300', textColor: 'text-gray-900' },
+
+  // Even More Animals
+  { name: 'Horse', emoji: '🐴', soundFrequency: 220, color: 'bg-amber-300', textColor: 'text-amber-900' },
+  { name: 'Panda', emoji: '🐼', soundFrequency: 190, color: 'bg-gray-200', textColor: 'text-gray-800' },
+  { name: 'Koala', emoji: '🐨', soundFrequency: 250, color: 'bg-gray-300', textColor: 'text-gray-900' },
+  { name: 'Penguin', emoji: '🐧', soundFrequency: 270, color: 'bg-slate-300', textColor: 'text-slate-900' },
+  { name: 'Owl', emoji: '🦉', soundFrequency: 310, color: 'bg-amber-400', textColor: 'text-amber-900' },
+  { name: 'Butterfly', emoji: '🦋', soundFrequency: 480, color: 'bg-purple-200', textColor: 'text-purple-800' },
+
+  // More Food
+  { name: 'Hamburger', emoji: '🍔', soundFrequency: 370, color: 'bg-yellow-400', textColor: 'text-yellow-900' },
+  { name: 'Donut', emoji: '🍩', soundFrequency: 420, color: 'bg-pink-300', textColor: 'text-pink-900' },
+  { name: 'Lollipop', emoji: '🍭', soundFrequency: 450, color: 'bg-pink-200', textColor: 'text-pink-800' },
+  { name: 'Candy', emoji: '🍬', soundFrequency: 470, color: 'bg-red-200', textColor: 'text-red-800' },
+  { name: 'Popcorn', emoji: '🍿', soundFrequency: 400, color: 'bg-yellow-300', textColor: 'text-yellow-900' },
+  { name: 'Pretzel', emoji: '🥨', soundFrequency: 380, color: 'bg-amber-200', textColor: 'text-amber-800' },
+
+  // More Objects
+  { name: 'Umbrella', emoji: '☂️', soundFrequency: 330, color: 'bg-blue-200', textColor: 'text-blue-800' },
+  { name: 'Rainbow', emoji: '🌈', soundFrequency: 540, color: 'bg-gradient-to-r from-red-200 to-purple-200', textColor: 'text-purple-800' },
+  { name: 'Moon', emoji: '🌙', soundFrequency: 480, color: 'bg-slate-200', textColor: 'text-slate-800' },
+  { name: 'Cloud', emoji: '☁️', soundFrequency: 360, color: 'bg-gray-200', textColor: 'text-gray-800' },
+  { name: 'Snowflake', emoji: '❄️', soundFrequency: 420, color: 'bg-blue-100', textColor: 'text-blue-600' },
+  { name: 'Fire', emoji: '🔥', soundFrequency: 580, color: 'bg-red-300', textColor: 'text-red-900' },
 ];
 
 export const translations: Record<string, Record<string, string>> = {
@@ -79,6 +127,12 @@ export const translations: Record<string, Record<string, string>> = {
     Sun: 'Sun', Star: 'Star', Flower: 'Flower', Tree: 'Tree',
     Ball: 'Ball', Balloon: 'Balloon', Gift: 'Gift', Book: 'Book',
     Guitar: 'Guitar', Piano: 'Piano', Drum: 'Drum',
+    Bear: 'Bear', Tiger: 'Tiger', Rabbit: 'Rabbit', Duck: 'Duck', Frog: 'Frog', Fish: 'Fish',
+    Pizza: 'Pizza', Cake: 'Cake', 'Ice Cream': 'Ice Cream', Cookie: 'Cookie', Sandwich: 'Sandwich', 'Hot Dog': 'Hot Dog',
+    House: 'House', Heart: 'Heart', Crown: 'Crown', Key: 'Key', Clock: 'Clock', Phone: 'Phone',
+    Horse: 'Horse', Panda: 'Panda', Koala: 'Koala', Penguin: 'Penguin', Owl: 'Owl', Butterfly: 'Butterfly',
+    Hamburger: 'Hamburger', Donut: 'Donut', Lollipop: 'Lollipop', Candy: 'Candy', Popcorn: 'Popcorn', Pretzel: 'Pretzel',
+    Umbrella: 'Umbrella', Rainbow: 'Rainbow', Moon: 'Moon', Cloud: 'Cloud', Snowflake: 'Snowflake', Fire: 'Fire',
   },
   lv: {
     Settings: 'Iestatījumi',
@@ -106,6 +160,12 @@ export const translations: Record<string, Record<string, string>> = {
     Sun: 'Saule', Star: 'Zvaigzne', Flower: 'Puķe', Tree: 'Koks',
     Ball: 'Bumba', Balloon: 'Balons', Gift: 'Dāvana', Book: 'Grāmata',
     Guitar: 'Ģitāra', Piano: 'Klavieres', Drum: 'Bungas',
+    Bear: 'Lācis', Tiger: 'Tīģeris', Rabbit: 'Trusis', Duck: 'Pīlīte', Frog: 'Varde', Fish: 'Zivs',
+    Pizza: 'Pica', Cake: 'Kūka', 'Ice Cream': 'Saldējums', Cookie: 'Cepums', Sandwich: 'Sviestmaize', 'Hot Dog': 'Hotdogs',
+    House: 'Māja', Heart: 'Sirds', Crown: 'Kronis', Key: 'Atslēga', Clock: 'Pulkstenis', Phone: 'Tālrunis',
+    Horse: 'Zirgs', Panda: 'Panda', Koala: 'Koala', Penguin: 'Pingvīns', Owl: 'Pūce', Butterfly: 'Tauriņš',
+    Hamburger: 'Hamburgers', Donut: 'Donuts', Lollipop: 'Lizuns', Candy: 'Konfekte', Popcorn: 'Popkorns', Pretzel: 'Precelis',
+    Umbrella: 'Lietussargs', Rainbow: 'Varavīksne', Moon: 'Mēness', Cloud: 'Mākonis', Snowflake: 'Sniegpārsla', Fire: 'Uguns',
   },
   es: {
     Settings: 'Ajustes',
@@ -133,6 +193,12 @@ export const translations: Record<string, Record<string, string>> = {
     Sun: 'Sol', Star: 'Estrella', Flower: 'Flor', Tree: 'Árbol',
     Ball: 'Pelota', Balloon: 'Globo', Gift: 'Regalo', Book: 'Libro',
     Guitar: 'Guitarra', Piano: 'Piano', Drum: 'Tambor',
+    Bear: 'Oso', Tiger: 'Tigre', Rabbit: 'Conejo', Duck: 'Pato', Frog: 'Rana', Fish: 'Pez',
+    Pizza: 'Pizza', Cake: 'Pastel', 'Ice Cream': 'Helado', Cookie: 'Galleta', Sandwich: 'Sándwich', 'Hot Dog': 'Perro Caliente',
+    House: 'Casa', Heart: 'Corazón', Crown: 'Corona', Key: 'Llave', Clock: 'Reloj', Phone: 'Teléfono',
+    Horse: 'Caballo', Panda: 'Panda', Koala: 'Koala', Penguin: 'Pingüino', Owl: 'Búho', Butterfly: 'Mariposa',
+    Hamburger: 'Hamburguesa', Donut: 'Donut', Lollipop: 'Piruleta', Candy: 'Dulce', Popcorn: 'Palomitas', Pretzel: 'Pretzel',
+    Umbrella: 'Paraguas', Rainbow: 'Arcoíris', Moon: 'Luna', Cloud: 'Nube', Snowflake: 'Copo de Nieve', Fire: 'Fuego',
   },
   fr: {
     Settings: 'Paramètres',
@@ -160,6 +226,12 @@ export const translations: Record<string, Record<string, string>> = {
     Sun: 'Soleil', Star: 'Étoile', Flower: 'Fleur', Tree: 'Arbre',
     Ball: 'Balle', Balloon: 'Ballon', Gift: 'Cadeau', Book: 'Livre',
     Guitar: 'Guitare', Piano: 'Piano', Drum: 'Tambour',
+    Bear: 'Ours', Tiger: 'Tigre', Rabbit: 'Lapin', Duck: 'Canard', Frog: 'Grenouille', Fish: 'Poisson',
+    Pizza: 'Pizza', Cake: 'Gâteau', 'Ice Cream': 'Glace', Cookie: 'Biscuit', Sandwich: 'Sandwich', 'Hot Dog': 'Hot Dog',
+    House: 'Maison', Heart: 'Cœur', Crown: 'Couronne', Key: 'Clé', Clock: 'Horloge', Phone: 'Téléphone',
+    Horse: 'Cheval', Panda: 'Panda', Koala: 'Koala', Penguin: 'Pingouin', Owl: 'Hibou', Butterfly: 'Papillon',
+    Hamburger: 'Hamburger', Donut: 'Donut', Lollipop: 'Sucette', Candy: 'Bonbon', Popcorn: 'Popcorn', Pretzel: 'Bretzel',
+    Umbrella: 'Parapluie', Rainbow: 'Arc-en-ciel', Moon: 'Lune', Cloud: 'Nuage', Snowflake: 'Flocon de Neige', Fire: 'Feu',
   },
   de: {
     Settings: 'Einstellungen',
@@ -187,6 +259,12 @@ export const translations: Record<string, Record<string, string>> = {
     Sun: 'Sonne', Star: 'Stern', Flower: 'Blume', Tree: 'Baum',
     Ball: 'Ball', Balloon: 'Luftballon', Gift: 'Geschenk', Book: 'Buch',
     Guitar: 'Gitarre', Piano: 'Klavier', Drum: 'Trommel',
+    Bear: 'Bär', Tiger: 'Tiger', Rabbit: 'Hase', Duck: 'Ente', Frog: 'Frosch', Fish: 'Fisch',
+    Pizza: 'Pizza', Cake: 'Kuchen', 'Ice Cream': 'Eis', Cookie: 'Keks', Sandwich: 'Sandwich', 'Hot Dog': 'Hot Dog',
+    House: 'Haus', Heart: 'Herz', Crown: 'Krone', Key: 'Schlüssel', Clock: 'Uhr', Phone: 'Telefon',
+    Horse: 'Pferd', Panda: 'Panda', Koala: 'Koala', Penguin: 'Pinguin', Owl: 'Eule', Butterfly: 'Schmetterling',
+    Hamburger: 'Hamburger', Donut: 'Donut', Lollipop: 'Lutscher', Candy: 'Süßigkeit', Popcorn: 'Popcorn', Pretzel: 'Brezel',
+    Umbrella: 'Regenschirm', Rainbow: 'Regenbogen', Moon: 'Mond', Cloud: 'Wolke', Snowflake: 'Schneeflocke', Fire: 'Feuer',
   }
 };
 

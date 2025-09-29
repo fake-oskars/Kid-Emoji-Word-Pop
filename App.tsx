@@ -14,6 +14,15 @@ import {
 import type { Item } from './types';
 
 // --- Helper Functions ---
+const pushAnalytics = (eventName: string, payload?: Record<string, unknown>) => {
+  try {
+    const w: any = window as any;
+    w.dataLayer = w.dataLayer || [];
+    w.dataLayer.push({ event: eventName, ...payload });
+  } catch (_) {
+    // no-op if window is unavailable
+  }
+};
 const shuffleArray = (array: any[]) => {
   const shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {
@@ -64,13 +73,19 @@ const NameItGame: React.FC<{ activeItems: Item[]; t: (key: string) => string; on
 
     const itemToPlay = activeItems[currentItemIndex];
     playSound(itemToPlay.soundFrequency);
+    pushAnalytics('name_it_interaction', { item: itemToPlay.name });
     setIsPopping(true);
 
     setTimeout(() => {
       let nextIndex;
+      let attempts = 0;
+      const maxAttempts = 10;
+      
+      // Try to find a different emoji, but also avoid showing the same one too recently
       do {
         nextIndex = Math.floor(Math.random() * activeItems.length);
-      } while (nextIndex === currentItemIndex && activeItems.length > 1);
+        attempts++;
+      } while (nextIndex === currentItemIndex && activeItems.length > 1 && attempts < maxAttempts);
       
       setCurrentItemIndex(nextIndex);
       setIsPopping(false);
@@ -91,14 +106,20 @@ const NameItGame: React.FC<{ activeItems: Item[]; t: (key: string) => string; on
       </div>
       <div className="relative flex flex-col items-center flex-grow justify-center">
         <div
-          className={`text-[10rem] md:text-[14rem] transition-transform duration-300 ease-in-out ${
+          className={`transition-transform duration-300 ease-in-out ${
             isPopping ? 'scale-110' : 'scale-100'
           }`}
+          style={{
+            fontSize: `${Math.max(180, Math.min(400, Math.min(window.innerWidth, window.innerHeight) * 0.4))}px`
+          }}
         >
           {emoji}
         </div>
         <div
-          className={`text-5xl md:text-7xl font-bold mt-4 transition-opacity duration-300 ${textColor} opacity-100`}
+          className={`font-bold mt-4 transition-opacity duration-300 ${textColor} opacity-100`}
+          style={{
+            fontSize: `${Math.max(48, Math.min(120, Math.min(window.innerWidth, window.innerHeight) * 0.12))}px`
+          }}
         >
           {t(name)}
         </div>
@@ -109,70 +130,114 @@ const NameItGame: React.FC<{ activeItems: Item[]; t: (key: string) => string; on
 
 // Game 2: Find It!
 type Difficulty = 'easy' | 'medium' | 'hard';
-const FindItGame: React.FC<{ activeItems: Item[]; t: (key: string) => string; onBack: () => void; difficulty: Difficulty }> = ({ activeItems, t, onBack, difficulty }) => {
+const FindItGame: React.FC<{ activeItems: Item[]; t: (key: string) => string; onBack: () => void; difficulty: Difficulty; emojiCount: number }> = ({ activeItems, t, onBack, difficulty, emojiCount }) => {
     const [target, setTarget] = useState<Item | null>(null);
     const [options, setOptions] = useState<Item[]>([]);
     const [feedback, setFeedback] = useState<'idle' | 'correct' | 'incorrect'>('idle');
     const [hardModePositions, setHardModePositions] = useState<React.CSSProperties[]>([]);
     const [incorrectlyClicked, setIncorrectlyClicked] = useState<string | null>(null);
     const [stats, setStats] = useState({ correct: 0, total: 0 });
+    const [scatteredItemSize, setScatteredItemSize] = useState<number>(60);
 
-    const optionsCount = useMemo(() => {
-      return { easy: 4, medium: 6, hard: 12 }[difficulty];
-    }, [difficulty]);
+    // New logic: use emojiCount directly, with different layouts based on count
+    const isCardLayout = emojiCount <= 6;
+    const isScatteredLayout = emojiCount >= 7;
 
     const generateChallenge = useCallback(() => {
-        if (activeItems.length < optionsCount) return;
+        if (activeItems.length < emojiCount) return;
         
         const shuffled = shuffleArray(activeItems);
         const newTarget = shuffled[0];
-        const otherOptions = shuffled.slice(1, optionsCount);
+        const otherOptions = shuffled.slice(1, emojiCount);
         const allOptions = shuffleArray([newTarget, ...otherOptions]);
         
         setTarget(newTarget);
         setOptions(allOptions);
         setFeedback('idle');
 
-        if (difficulty === 'hard') {
+        if (isScatteredLayout) {
+            // GUARANTEED NON-OVERLAPPING GRID SYSTEM
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            const headerHeight = 200;
+            const footerHeight = 100;
+            const padding = 40;
+            
+            const availableWidth = viewportWidth - (padding * 2);
+            const availableHeight = viewportHeight - headerHeight - footerHeight;
+            
+            // Calculate grid dimensions to fit all items
+            const cols = Math.ceil(Math.sqrt(emojiCount));
+            const rows = Math.ceil(emojiCount / cols);
+            
+            // Calculate cell size to fit grid in available space
+            const cellWidth = availableWidth / cols;
+            const cellHeight = availableHeight / rows;
+            const cellSize = Math.min(cellWidth, cellHeight);
+            
+            // Calculate emoji size to fit in cells with padding
+            // More responsive sizing based on screen size and object count
+            const isMobile = viewportWidth < 768;
+            const isHighCount = emojiCount >= 24;
+            
+            let itemSize;
+            if (isMobile && isHighCount) {
+                // Mobile with many objects: smaller, more spaced
+                itemSize = Math.max(35, Math.min(60, cellSize * 0.5));
+            } else if (isMobile) {
+                // Mobile with fewer objects: medium size
+                itemSize = Math.max(45, Math.min(80, cellSize * 0.6));
+            } else if (isHighCount) {
+                // Desktop with many objects: medium size
+                itemSize = Math.max(50, Math.min(90, cellSize * 0.65));
+            } else {
+                // Desktop with fewer objects: large size
+                itemSize = Math.max(60, Math.min(100, cellSize * 0.7));
+            }
+            
+            setScatteredItemSize(itemSize);
+            
+            // Generate grid positions with random offsets within cells
             const positions: React.CSSProperties[] = [];
-            const placedCoordinates: { top: number; left: number; }[] = [];
-            const itemSize = 100; // apx size for collision check
-            const maxAttempts = 50;
-            const headerHeight = 150;
-
-            for (let i = 0; i < optionsCount; i++) {
-                let isColliding = true;
-                let attempts = 0;
-                let newPos = { top: 0, left: 0 };
-
-                while(isColliding && attempts < maxAttempts) {
-                    isColliding = false;
-                    const top = Math.random() * (window.innerHeight - itemSize - headerHeight) + headerHeight;
-                    const left = Math.random() * (window.innerWidth - itemSize);
-                    newPos = { top, left };
-
-                    for (const pos of placedCoordinates) {
-                        const dx = newPos.left - pos.left;
-                        const dy = newPos.top - pos.top;
-                        const distance = Math.sqrt(dx * dx + dy * dy);
-                        if (distance < itemSize * 0.8) { // 80% of size for tighter packing
-                            isColliding = true;
-                            break;
-                        }
-                    }
-                    attempts++;
-                }
-                placedCoordinates.push(newPos);
+            
+            for (let i = 0; i < emojiCount; i++) {
+                const row = Math.floor(i / cols);
+                const col = i % cols;
+                
+                // Chess pattern: offset every other row by half a cell width
+                const isOddRow = row % 2 === 1;
+                const chessOffset = isOddRow ? cellWidth * 0.5 : 0;
+                
+                // Calculate base grid position with chess pattern offset
+                const baseLeft = padding + (col * cellWidth) + chessOffset;
+                const baseTop = headerHeight + (row * cellHeight);
+                
+                // Add random offset within cell (but keep emoji centered-ish)
+                // Reduce offset on mobile with many objects to reduce clutter
+                const offsetMultiplier = (isMobile && isHighCount) ? 0.15 : 0.3;
+                const maxOffset = Math.min(cellWidth, cellHeight) * offsetMultiplier;
+                const randomOffsetX = (Math.random() - 0.5) * maxOffset;
+                const randomOffsetY = (Math.random() - 0.5) * maxOffset;
+                
+                // Center the emoji in the cell and add random offset
+                const finalLeft = baseLeft + (cellWidth - itemSize) / 2 + randomOffsetX;
+                const finalTop = baseTop + (cellHeight - itemSize) / 2 + randomOffsetY;
+                
+                // Ensure position stays within bounds (account for chess offset)
+                const clampedLeft = Math.max(padding, Math.min(finalLeft, viewportWidth - padding - itemSize));
+                const clampedTop = Math.max(headerHeight, Math.min(finalTop, viewportHeight - footerHeight - itemSize));
+                
                 positions.push({
-                    top: `${newPos.top}px`,
-                    left: `${newPos.left}px`,
-                    transform: `rotate(${Math.random() * 50 - 25}deg) scale(${Math.random() * 0.3 + 0.9})`
+                    top: `${clampedTop}px`,
+                    left: `${clampedLeft}px`,
+                    transform: `rotate(${Math.random() * 30 - 15}deg) scale(${Math.random() * 0.2 + 0.9})`
                 });
             }
+            
             setHardModePositions(positions);
         }
 
-    }, [activeItems, optionsCount, difficulty]);
+    }, [activeItems, emojiCount, isScatteredLayout]);
 
     useEffect(() => {
         generateChallenge();
@@ -187,11 +252,13 @@ const FindItGame: React.FC<{ activeItems: Item[]; t: (key: string) => string; on
             setTimeout(() => playSound(target.soundFrequency), 200);
             setFeedback('correct');
             setStats(prev => ({ correct: prev.correct + 1, total: prev.total + 1 }));
+          pushAnalytics('answer', { result: 'correct', item: item.name });
             setTimeout(generateChallenge, 1200);
         } else {
             playIncorrectSound();
             setFeedback('incorrect');
             setIncorrectlyClicked(item.name);
+          pushAnalytics('answer', { result: 'incorrect', item: item.name });
             setStats(prev => ({ ...prev, total: prev.total + 1 }));
             setTimeout(() => {
               setFeedback('idle');
@@ -200,19 +267,19 @@ const FindItGame: React.FC<{ activeItems: Item[]; t: (key: string) => string; on
         }
     };
     
-    if (activeItems.length < optionsCount) {
+    if (activeItems.length < emojiCount) {
       return (
         <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 p-4 text-center">
           <BackButton onClick={onBack} />
           <h2 className="text-2xl text-gray-700">Need more items to play!</h2>
-          <p className="text-gray-500">Open settings and set the number of items to {optionsCount} or more.</p>
+          <p className="text-gray-500">Open settings and set the number of items to {emojiCount} or more.</p>
         </div>
       );
     }
     
     if (!target) return null; // Loading state
 
-    const containerClass = difficulty === 'hard' ? 'bg-sky-100' : target.color;
+    const containerClass = isScatteredLayout ? 'bg-sky-100' : target.color;
 
     return (
         <div className={`w-full h-full flex flex-col items-center justify-start transition-colors duration-300 select-none p-4 pt-20 ${containerClass}`}>
@@ -227,7 +294,7 @@ const FindItGame: React.FC<{ activeItems: Item[]; t: (key: string) => string; on
                 </h2>
             </div>
             
-            {difficulty === 'hard' ? (
+            {isScatteredLayout ? (
                 <div className="absolute top-0 left-0 w-full h-full overflow-hidden">
                     {options.map((item, index) => (
                         <button
@@ -239,12 +306,19 @@ const FindItGame: React.FC<{ activeItems: Item[]; t: (key: string) => string; on
                                         `}
                             style={hardModePositions[index]}
                         >
-                            <span className="text-6xl md:text-8xl">{item.emoji}</span>
+                            <span 
+                                className="emoji-responsive"
+                                style={{
+                                    fontSize: `${Math.max(40, Math.min(100, scatteredItemSize * 0.8))}px`
+                                }}
+                            >
+                                {item.emoji}
+                            </span>
                         </button>
                     ))}
                 </div>
             ) : (
-                <div className={`grid gap-2 sm:gap-3 md:gap-4 w-full h-full max-w-6xl mx-auto px-4 sm:px-6 py-4 ${getOptimalGridClass(optionsCount)}`}>
+                <div className={`grid gap-2 sm:gap-3 md:gap-4 w-full h-full max-w-6xl mx-auto px-4 sm:px-6 py-4 ${getOptimalGridClass(emojiCount)}`}>
                     {options.map((item) => (
                         <button
                             key={item.name}
@@ -254,7 +328,14 @@ const FindItGame: React.FC<{ activeItems: Item[]; t: (key: string) => string; on
                                         ${feedback === 'correct' && item.name === target.name ? 'scale-110 ring-4 ring-white' : ''}
                                         `}
                         >
-                            <span className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl">{item.emoji}</span>
+                            <span 
+                                className="emoji-responsive"
+                                style={{
+                                    fontSize: `${Math.max(80, Math.min(200, Math.min(window.innerWidth, window.innerHeight) * 0.25))}px`
+                                }}
+                            >
+                                {item.emoji}
+                            </span>
                         </button>
                     ))}
                 </div>
@@ -402,7 +483,10 @@ const App: React.FC = () => {
   const [difficulty, setDifficulty] = useState<Difficulty>(() => (localStorage.getItem('toddlerPopDifficulty') as Difficulty) || 'easy');
 
   const activeItems = useMemo(() => {
-    return shuffleArray(ALL_ITEMS).slice(0, emojiCount);
+    // Always provide a large pool of emojis for variety, but games will use only what they need
+    const minPoolSize = Math.max(emojiCount, 20); // Always have at least 20 emojis for variety
+    const maxPoolSize = Math.min(ALL_ITEMS.length, minPoolSize + 10); // Add extra 10 for more variety
+    return shuffleArray(ALL_ITEMS).slice(0, maxPoolSize);
   }, [emojiCount]);
 
   useEffect(() => {
@@ -434,19 +518,21 @@ const App: React.FC = () => {
 
 
   useEffect(() => {
-    // Enforce minimum item count for hard difficulty
+    // Ensure minimum emoji count for hard difficulty
     if (difficulty === 'hard' && emojiCount < 12) {
       setEmojiCount(12);
     }
-  }, [difficulty, emojiCount]);
+  }, [difficulty]);
   
   const handleSelectGame = (mode: 'name-it' | 'find-it') => {
     setGameMode(mode);
+    pushAnalytics('screen_view', { screen_name: mode });
   };
 
   const handleGoBack = () => {
     playUIClick();
     setGameMode(null);
+    pushAnalytics('screen_view', { screen_name: 'menu' });
   };
 
   const t = (key: string) => translations[language]?.[key] || translations['en'][key] || key;
@@ -461,7 +547,7 @@ const App: React.FC = () => {
     }
 
     if (gameMode === 'find-it') {
-      return <FindItGame activeItems={activeItems} t={t} onBack={handleGoBack} difficulty={difficulty} />;
+      return <FindItGame activeItems={activeItems} t={t} onBack={handleGoBack} difficulty={difficulty} emojiCount={emojiCount} />;
     }
   };
 
@@ -533,15 +619,31 @@ const App: React.FC = () => {
               <input
                 id="emoji-count-slider"
                 type="range"
-                min={difficulty === 'hard' ? 12 : 5}
-                max={ALL_ITEMS.length}
+                min={4}
+                max={36}
                 value={emojiCount}
                 onChange={(e) => {
                   playUIClick();
-                  setEmojiCount(parseInt(e.target.value, 10));
+                  const newCount = parseInt(e.target.value, 10);
+                  setEmojiCount(newCount);
+                  pushAnalytics('settings_change', { setting: 'emoji_count', value: newCount });
+                  
+                  // Automatically set difficulty based on emoji count
+                  if (newCount === 4) {
+                    setDifficulty('easy');
+                    pushAnalytics('settings_change', { setting: 'difficulty', value: 'easy' });
+                  } else if (newCount === 6) {
+                    setDifficulty('medium');
+                    pushAnalytics('settings_change', { setting: 'difficulty', value: 'medium' });
+                  } else if (newCount >= 7) {
+                    setDifficulty('hard');
+                    pushAnalytics('settings_change', { setting: 'difficulty', value: 'hard' });
+                  }
                 }}
                 className="w-full h-2 bg-white/50 rounded-lg appearance-none cursor-pointer"
               />
+              <div className="text-xs text-gray-500 mt-1">
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">{t('difficulty')}</label>
@@ -552,6 +654,14 @@ const App: React.FC = () => {
                     onClick={() => {
                       playUIClick();
                       setDifficulty(level);
+                      // Set appropriate emoji count based on difficulty
+                      if (level === 'easy') {
+                        setEmojiCount(4);
+                      } else if (level === 'medium') {
+                        setEmojiCount(6);
+                      } else if (level === 'hard') {
+                        setEmojiCount(12);
+                      }
                     }}
                     className={`p-2 rounded-md text-sm font-semibold transition-colors ${
                       difficulty === level
