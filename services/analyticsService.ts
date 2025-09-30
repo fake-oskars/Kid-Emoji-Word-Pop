@@ -5,12 +5,20 @@ export interface AnalyticsEvent {
   [key: string]: unknown;
 }
 
-// Helper function to push analytics events to dataLayer
+// Helper function to push analytics events using gtag (GA4)
 export const pushAnalytics = (eventName: string, payload?: Record<string, unknown>) => {
   try {
     const w: any = window as any;
+    
+    // Send to gtag (GA4)
+    if (typeof w.gtag === 'function') {
+      w.gtag('event', eventName, payload);
+    }
+    
+    // Also push to dataLayer for debugging
     w.dataLayer = w.dataLayer || [];
     w.dataLayer.push({ event: eventName, ...payload });
+    
     console.log('📊 Analytics Event:', eventName, payload); // Debug logging
   } catch (error) {
     console.error('Analytics error:', error);
