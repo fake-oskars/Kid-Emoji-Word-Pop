@@ -35,8 +35,15 @@ export const trackPageView = (pagePath: string, pageTitle: string) => {
 
 // Screen view tracking (for SPA navigation)
 export const trackScreenView = (screenName: string) => {
-  pushAnalytics('screen_view', {
-    screen_name: screenName,
+  // Translate screen names to Latvian
+  const readableNames: Record<string, string> = {
+    'menu': 'Galvenā izvēlne',
+    'name-it': 'Kas tas ir',
+    'find-it': 'Atrodi'
+  };
+  
+  pushAnalytics('skats', {
+    ekrans: readableNames[screenName] || screenName,
   });
 };
 
@@ -48,11 +55,19 @@ export const trackGameStart = (gameMode: 'name-it' | 'find-it', difficulty?: str
   gameStartTime = Date.now();
   currentGameMode = gameMode;
   
-  pushAnalytics('game_start', {
-    game_mode: gameMode,
-    difficulty: difficulty,
-    item_count: itemCount,
-    timestamp: gameStartTime,
+  // Translate to Latvian game names
+  const gameName = gameMode === 'name-it' ? 'Kas tas ir' : 'Atrodi';
+  const difficultyMap: Record<string, string> = {
+    'easy': 'Viegli',
+    'medium': 'Vidēji',
+    'hard': 'Grūti'
+  };
+  const difficultyName = difficulty ? difficultyMap[difficulty] : undefined;
+  
+  pushAnalytics('sakums', {
+    spele: gameName,
+    grutiba: difficultyName,
+    objekti: itemCount,
   });
 };
 
@@ -61,14 +76,15 @@ export const trackGameEnd = (stats?: { correct: number; total: number }) => {
   
   const sessionDuration = Math.round((Date.now() - gameStartTime) / 1000); // in seconds
   const accuracy = stats && stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
+  const gameName = currentGameMode === 'name-it' ? 'Kas tas ir' : 'Atrodi';
   
-  pushAnalytics('game_end', {
-    game_mode: currentGameMode,
-    session_duration_seconds: sessionDuration,
-    total_attempts: stats?.total || 0,
-    correct_attempts: stats?.correct || 0,
-    accuracy_percentage: accuracy,
-    timestamp: Date.now(),
+  pushAnalytics('beigas', {
+    spele: gameName,
+    ilgums_sek: sessionDuration,
+    pareizi: stats?.correct || 0,
+    kopaa: stats?.total || 0,
+    precizitate: accuracy,
+    value: sessionDuration, // GA4 uses 'value' for metrics
   });
   
   // Reset session tracking
@@ -78,9 +94,8 @@ export const trackGameEnd = (stats?: { correct: number; total: number }) => {
 
 // User interaction tracking
 export const trackInteraction = (interactionType: string, details?: Record<string, unknown>) => {
-  pushAnalytics('user_interaction', {
-    interaction_type: interactionType,
-    ...details,
+  pushAnalytics('klikskis', {
+    emoji: details?.item || 'unknown',
   });
 };
 
@@ -91,19 +106,30 @@ export const trackAnswer = (
   gameMode: string,
   responseTime?: number
 ) => {
-  pushAnalytics('answer', {
-    result,
-    item,
-    game_mode: gameMode,
-    response_time_ms: responseTime,
+  const gameName = gameMode === 'name-it' ? 'Kas tas ir' : 'Atrodi';
+  const isCorrect = result === 'correct';
+  
+  pushAnalytics('atbilde', {
+    spele: gameName,
+    emoji: item,
+    rezultats: result === 'correct' ? 'Pareizi' : 'Nepareizi',
+    laiks_ms: responseTime,
+    value: isCorrect ? 1 : 0, // 1 for correct, 0 for incorrect
   });
 };
 
 // Settings change tracking
 export const trackSettingsChange = (setting: string, value: string | number) => {
-  pushAnalytics('settings_change', {
-    setting,
-    value,
+  // Translate settings to Latvian
+  const settingNames: Record<string, string> = {
+    'emoji_count': 'Objektu skaits',
+    'difficulty': 'Grūtība',
+    'language': 'Valoda'
+  };
+  
+  pushAnalytics('iestatijums', {
+    iestatijums: settingNames[setting] || setting,
+    vertiba: value,
   });
 };
 
@@ -117,11 +143,12 @@ export const trackEngagement = (engagementType: string, value?: number | string)
 
 // App initialization tracking
 export const trackAppInit = () => {
-  pushAnalytics('app_initialized', {
-    timestamp: Date.now(),
-    user_agent: navigator.userAgent,
-    screen_width: window.innerWidth,
-    screen_height: window.innerHeight,
-    language: navigator.language,
+  const isMobile = window.innerWidth < 768;
+  
+  pushAnalytics('ieladeja_lapu', {
+    ierice: isMobile ? 'Mobilais' : 'Dators',
+    platums: window.innerWidth,
+    augstums: window.innerHeight,
+    valoda: navigator.language,
   });
 };
