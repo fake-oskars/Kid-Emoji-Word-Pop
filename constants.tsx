@@ -164,7 +164,7 @@ export const translations: Record<string, Record<string, string>> = {
     Pizza: 'Pica', Cake: 'Kūka', 'Ice Cream': 'Saldējums', Cookie: 'Cepums', Sandwich: 'Sviestmaize', 'Hot Dog': 'Hotdogs',
     House: 'Māja', Heart: 'Sirds', Crown: 'Kronis', Key: 'Atslēga', Clock: 'Pulkstenis', Phone: 'Tālrunis',
     Horse: 'Zirgs', Panda: 'Panda', Koala: 'Koala', Penguin: 'Pingvīns', Owl: 'Pūce', Butterfly: 'Tauriņš',
-    Hamburger: 'Hamburgers', Donut: 'Donuts', Lollipop: 'Lizuns', Candy: 'Konfekte', Popcorn: 'Popkorns', Pretzel: 'Precelis',
+    Hamburger: 'Hamburgers', Donut: 'Donuts', Lollipop: 'Konfekte uz kociņa', Candy: 'Konfekte', Popcorn: 'Popkorns', Pretzel: 'Precelis',
     Umbrella: 'Lietussargs', Rainbow: 'Varavīksne', Moon: 'Mēness', Cloud: 'Mākonis', Snowflake: 'Sniegpārsla', Fire: 'Uguns',
   },
   es: {
