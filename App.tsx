@@ -186,24 +186,23 @@ const FindItGame: React.FC<{ activeItems: Item[]; t: (key: string) => string; on
             const cellSize = Math.min(cellWidth, cellHeight);
             
             // Calculate emoji size to fit in cells with padding
-            // More responsive sizing based on screen size and object count
+            // Use larger multipliers for bigger, more visible emoji
             const isMobile = viewportWidth < 768;
             const isHighCount = emojiCount >= 24;
             
-            let itemSize;
+            // Use percentage of cellSize - bigger emoji for better visibility
+            let sizeMultiplier;
             if (isMobile && isHighCount) {
-                // Mobile with many objects: smaller, more spaced
-                itemSize = Math.max(35, Math.min(60, cellSize * 0.5));
+                sizeMultiplier = 0.65; // 65% of cell on mobile with many items (was 0.45)
             } else if (isMobile) {
-                // Mobile with fewer objects: medium size
-                itemSize = Math.max(45, Math.min(80, cellSize * 0.6));
+                sizeMultiplier = 0.75; // 75% of cell on mobile (was 0.55)
             } else if (isHighCount) {
-                // Desktop with many objects: medium size
-                itemSize = Math.max(50, Math.min(90, cellSize * 0.65));
+                sizeMultiplier = 0.7; // 70% of cell on desktop with many items (was 0.5)
             } else {
-                // Desktop with fewer objects: large size
-                itemSize = Math.max(60, Math.min(100, cellSize * 0.7));
+                sizeMultiplier = 0.85; // 85% of cell on desktop (was 0.6)
             }
+            
+            const itemSize = Math.max(40, cellSize * sizeMultiplier); // Minimum 40px, otherwise proportional
             
             setScatteredItemSize(itemSize);
             
@@ -223,11 +222,11 @@ const FindItGame: React.FC<{ activeItems: Item[]; t: (key: string) => string; on
                 const baseTop = headerHeight + (row * cellHeight);
                 
                 // Add random offset within cell (but keep emoji centered-ish)
-                // Reduce offset on mobile with many objects to reduce clutter
-                const offsetMultiplier = (isMobile && isHighCount) ? 0.15 : 0.3;
-                const maxOffset = Math.min(cellWidth, cellHeight) * offsetMultiplier;
-                const randomOffsetX = (Math.random() - 0.5) * maxOffset;
-                const randomOffsetY = (Math.random() - 0.5) * maxOffset;
+                // Calculate safe offset that won't push items outside bounds
+                const safeOffsetMultiplier = (isMobile && isHighCount) ? 0.1 : 0.2;
+                const maxSafeOffset = (cellSize - itemSize) * safeOffsetMultiplier;
+                const randomOffsetX = (Math.random() - 0.5) * maxSafeOffset;
+                const randomOffsetY = (Math.random() - 0.5) * maxSafeOffset;
                 
                 // Center the emoji in the cell and add random offset
                 const finalLeft = baseLeft + (cellWidth - itemSize) / 2 + randomOffsetX;
@@ -312,16 +311,21 @@ const FindItGame: React.FC<{ activeItems: Item[]; t: (key: string) => string; on
                         <button
                             key={item.name}
                             onClick={() => handleOptionClick(item)}
-                            className={`absolute transition-all duration-200 active:scale-90 will-change-transform
+                            className={`absolute transition-all duration-200 active:scale-90 will-change-transform flex items-center justify-center
                                         ${incorrectlyClicked === item.name ? 'animate-shake bg-red-200/60 backdrop-blur-sm rounded-full p-2' : ''}
                                         ${feedback === 'correct' && item.name === target.name ? 'scale-[1.3] ring-4 ring-white rounded-full' : ''}
                                         `}
-                            style={hardModePositions[index]}
+                            style={{
+                                ...hardModePositions[index],
+                                width: `${scatteredItemSize}px`,
+                                height: `${scatteredItemSize}px`,
+                            }}
                         >
                             <span 
                                 className="emoji-responsive"
                                 style={{
-                                    fontSize: `${Math.max(40, Math.min(100, scatteredItemSize * 0.8))}px`
+                                    fontSize: `${scatteredItemSize * 0.8}px`,
+                                    lineHeight: '1',
                                 }}
                             >
                                 {item.emoji}
@@ -331,25 +335,45 @@ const FindItGame: React.FC<{ activeItems: Item[]; t: (key: string) => string; on
                 </div>
             ) : (
                 <div className={`grid gap-2 sm:gap-3 md:gap-4 w-full h-full max-w-6xl mx-auto px-4 sm:px-6 py-4 ${getOptimalGridClass(emojiCount)}`}>
-                    {options.map((item) => (
-                        <button
-                            key={item.name}
-                            onClick={() => handleOptionClick(item)}
-                            className={`w-full h-full flex items-center justify-center rounded-2xl sm:rounded-3xl shadow-lg transition-all duration-200 active:scale-90
-                                        ${incorrectlyClicked === item.name ? 'animate-shake bg-red-200/60' : 'bg-white/30'}
-                                        ${feedback === 'correct' && item.name === target.name ? 'scale-110 ring-4 ring-white' : ''}
-                                        `}
-                        >
-                            <span 
-                                className="emoji-responsive"
-                                style={{
-                                    fontSize: `${Math.max(80, Math.min(200, Math.min(window.innerWidth, window.innerHeight) * 0.25))}px`
-                                }}
+                    {options.map((item) => {
+                        // Calculate emoji size based on available space and grid layout
+                        const cols = emojiCount <= 2 ? 2 : emojiCount <= 4 ? 2 : emojiCount <= 6 ? 3 : 4;
+                        const rows = Math.ceil(emojiCount / cols);
+                        
+                        // Use viewport dimensions to calculate cell size
+                        const vw = window.innerWidth;
+                        const vh = window.innerHeight;
+                        const maxWidth = Math.min(vw * 0.9, 1536); // max-w-6xl with padding
+                        const maxHeight = vh * 0.7; // Available height for grid
+                        
+                        const cellWidth = maxWidth / cols;
+                        const cellHeight = maxHeight / rows;
+                        const cellSize = Math.min(cellWidth, cellHeight);
+                        
+                        // Emoji should be 60-70% of cell size
+                        const emojiSize = Math.max(40, Math.min(cellSize * 0.65, 180));
+                        
+                        return (
+                            <button
+                                key={item.name}
+                                onClick={() => handleOptionClick(item)}
+                                className={`w-full h-full flex items-center justify-center rounded-2xl sm:rounded-3xl shadow-lg transition-all duration-200 active:scale-90
+                                            ${incorrectlyClicked === item.name ? 'animate-shake bg-red-200/60' : 'bg-white/30'}
+                                            ${feedback === 'correct' && item.name === target.name ? 'scale-110 ring-4 ring-white' : ''}
+                                            `}
                             >
-                                {item.emoji}
-                            </span>
-                        </button>
-                    ))}
+                                <span 
+                                    className="emoji-responsive"
+                                    style={{
+                                        fontSize: `${emojiSize}px`,
+                                        lineHeight: '1',
+                                    }}
+                                >
+                                    {item.emoji}
+                                </span>
+                            </button>
+                        );
+                    })}
                 </div>
             )}
             
@@ -381,10 +405,13 @@ const GameSelection: React.FC<{ onSelect: (mode: 'name-it' | 'find-it') => void;
   };
   
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 p-4 select-none">
+    <div className="w-full h-full flex flex-col items-center justify-center p-4 select-none" style={{ backgroundColor: '#FCF7E1' }}>
       {/* Clean Title */}
       <div className="text-center mb-8">
-        <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+        <h1 
+          className="text-4xl sm:text-5xl md:text-6xl font-bold bg-clip-text text-transparent"
+          style={{ backgroundImage: 'linear-gradient(to right, #FF6F00, #FF0090)' }}
+        >
           {t('selectGame')}
         </h1>
       </div>
