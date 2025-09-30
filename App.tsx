@@ -11,18 +11,19 @@ import {
   playIncorrectSound,
   playTransitionSound
 } from './services/audioService';
+import { 
+  trackPageView,
+  trackScreenView, 
+  trackGameStart, 
+  trackGameEnd, 
+  trackAnswer, 
+  trackSettingsChange,
+  trackInteraction,
+  trackAppInit
+} from './services/analyticsService';
 import type { Item } from './types';
 
 // --- Helper Functions ---
-const pushAnalytics = (eventName: string, payload?: Record<string, unknown>) => {
-  try {
-    const w: any = window as any;
-    w.dataLayer = w.dataLayer || [];
-    w.dataLayer.push({ event: eventName, ...payload });
-  } catch (_) {
-    // no-op if window is unavailable
-  }
-};
 const shuffleArray = (array: any[]) => {
   const shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {
@@ -73,7 +74,7 @@ const NameItGame: React.FC<{ activeItems: Item[]; t: (key: string) => string; on
 
     const itemToPlay = activeItems[currentItemIndex];
     playSound(itemToPlay.soundFrequency);
-    pushAnalytics('name_it_interaction', { item: itemToPlay.name });
+    trackInteraction('name_it_tap', { item: itemToPlay.name });
     setIsPopping(true);
 
     setTimeout(() => {
@@ -130,7 +131,7 @@ const NameItGame: React.FC<{ activeItems: Item[]; t: (key: string) => string; on
 
 // Game 2: Find It!
 type Difficulty = 'easy' | 'medium' | 'hard';
-const FindItGame: React.FC<{ activeItems: Item[]; t: (key: string) => string; onBack: () => void; difficulty: Difficulty; emojiCount: number }> = ({ activeItems, t, onBack, difficulty, emojiCount }) => {
+const FindItGame: React.FC<{ activeItems: Item[]; t: (key: string) => string; onBack: () => void; difficulty: Difficulty; emojiCount: number; onGameEnd?: (stats: {correct: number; total: number}) => void }> = ({ activeItems, t, onBack, difficulty, emojiCount, onGameEnd }) => {
     const [target, setTarget] = useState<Item | null>(null);
     const [options, setOptions] = useState<Item[]>([]);
     const [feedback, setFeedback] = useState<'idle' | 'correct' | 'incorrect'>('idle');
@@ -138,10 +139,18 @@ const FindItGame: React.FC<{ activeItems: Item[]; t: (key: string) => string; on
     const [incorrectlyClicked, setIncorrectlyClicked] = useState<string | null>(null);
     const [stats, setStats] = useState({ correct: 0, total: 0 });
     const [scatteredItemSize, setScatteredItemSize] = useState<number>(60);
+    const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now());
 
     // New logic: use emojiCount directly, with different layouts based on count
     const isCardLayout = emojiCount <= 6;
     const isScatteredLayout = emojiCount >= 7;
+
+    const handleBack = () => {
+        if (onGameEnd) {
+            onGameEnd(stats);
+        }
+        onBack();
+    };
 
     const generateChallenge = useCallback(() => {
         if (activeItems.length < emojiCount) return;
@@ -154,6 +163,7 @@ const FindItGame: React.FC<{ activeItems: Item[]; t: (key: string) => string; on
         setTarget(newTarget);
         setOptions(allOptions);
         setFeedback('idle');
+        setQuestionStartTime(Date.now());
 
         if (isScatteredLayout) {
             // GUARANTEED NON-OVERLAPPING GRID SYSTEM
@@ -246,19 +256,21 @@ const FindItGame: React.FC<{ activeItems: Item[]; t: (key: string) => string; on
     const handleOptionClick = (item: Item) => {
         if (feedback !== 'idle' || !target) return;
 
+        const responseTime = Date.now() - questionStartTime;
+
         if (item.name === target.name) {
             playCorrectSound();
             // Play the item sound slightly after the success chime starts
             setTimeout(() => playSound(target.soundFrequency), 200);
             setFeedback('correct');
             setStats(prev => ({ correct: prev.correct + 1, total: prev.total + 1 }));
-          pushAnalytics('answer', { result: 'correct', item: item.name });
+            trackAnswer('correct', item.name, 'find-it', responseTime);
             setTimeout(generateChallenge, 1200);
         } else {
             playIncorrectSound();
             setFeedback('incorrect');
             setIncorrectlyClicked(item.name);
-          pushAnalytics('answer', { result: 'incorrect', item: item.name });
+            trackAnswer('incorrect', item.name, 'find-it', responseTime);
             setStats(prev => ({ ...prev, total: prev.total + 1 }));
             setTimeout(() => {
               setFeedback('idle');
@@ -270,7 +282,7 @@ const FindItGame: React.FC<{ activeItems: Item[]; t: (key: string) => string; on
     if (activeItems.length < emojiCount) {
       return (
         <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 p-4 text-center">
-          <BackButton onClick={onBack} />
+          <BackButton onClick={handleBack} />
           <h2 className="text-2xl text-gray-700">Need more items to play!</h2>
           <p className="text-gray-500">Open settings and set the number of items to {emojiCount} or more.</p>
         </div>
@@ -284,7 +296,7 @@ const FindItGame: React.FC<{ activeItems: Item[]; t: (key: string) => string; on
     return (
         <div className={`w-full h-full flex flex-col items-center justify-start transition-colors duration-300 select-none p-4 pt-20 ${containerClass}`}>
             <div className="absolute top-4 left-0 right-0 flex justify-between items-center px-4 z-20">
-                <BackButton onClick={onBack} />
+                <BackButton onClick={handleBack} />
                 <SimpleStats correct={stats.correct} total={stats.total} t={t} />
                 <div className="w-12"></div> {/* Spacer for settings button alignment */}
             </div>
@@ -473,6 +485,7 @@ const GameSelection: React.FC<{ onSelect: (mode: 'name-it' | 'find-it') => void;
 const App: React.FC = () => {
   const [gameMode, setGameMode] = useState<'name-it' | 'find-it' | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [gameStats, setGameStats] = useState<{correct: number; total: number} | null>(null);
 
   // --- Settings state with localStorage ---
   const [language, setLanguage] = useState<string>(() => localStorage.getItem('toddlerPopLanguage') || 'lv');
@@ -501,8 +514,13 @@ const App: React.FC = () => {
     localStorage.setItem('toddlerPopDifficulty', difficulty);
   }, [difficulty]);
   
-  // Ensure audio context is unlocked by the first user interaction.
+  // Initialize analytics and audio
   useEffect(() => {
+    // Track app initialization
+    trackAppInit();
+    trackPageView('/', 'Teo Spēles - Bērnu Emoji spēles');
+    trackScreenView('menu');
+
     const initAudioOnFirstInteraction = () => {
       initializeAudio();
     };
@@ -526,13 +544,27 @@ const App: React.FC = () => {
   
   const handleSelectGame = (mode: 'name-it' | 'find-it') => {
     setGameMode(mode);
-    pushAnalytics('screen_view', { screen_name: mode });
+    trackScreenView(mode);
+    if (mode === 'find-it') {
+      trackGameStart(mode, difficulty, emojiCount);
+    } else {
+      trackGameStart(mode);
+    }
   };
 
   const handleGoBack = () => {
     playUIClick();
+    if (gameMode) {
+      // Track game end with stats if available
+      trackGameEnd(gameStats || undefined);
+    }
     setGameMode(null);
-    pushAnalytics('screen_view', { screen_name: 'menu' });
+    setGameStats(null);
+    trackScreenView('menu');
+  };
+
+  const handleGameEnd = (stats: {correct: number; total: number}) => {
+    setGameStats(stats);
   };
 
   const t = (key: string) => translations[language]?.[key] || translations['en'][key] || key;
@@ -547,7 +579,7 @@ const App: React.FC = () => {
     }
 
     if (gameMode === 'find-it') {
-      return <FindItGame activeItems={activeItems} t={t} onBack={handleGoBack} difficulty={difficulty} emojiCount={emojiCount} />;
+      return <FindItGame activeItems={activeItems} t={t} onBack={handleGoBack} difficulty={difficulty} emojiCount={emojiCount} onGameEnd={handleGameEnd} />;
     }
   };
 
@@ -626,18 +658,18 @@ const App: React.FC = () => {
                   playUIClick();
                   const newCount = parseInt(e.target.value, 10);
                   setEmojiCount(newCount);
-                  pushAnalytics('settings_change', { setting: 'emoji_count', value: newCount });
+                  trackSettingsChange('emoji_count', newCount);
                   
                   // Automatically set difficulty based on emoji count
                   if (newCount === 4) {
                     setDifficulty('easy');
-                    pushAnalytics('settings_change', { setting: 'difficulty', value: 'easy' });
+                    trackSettingsChange('difficulty', 'easy');
                   } else if (newCount === 6) {
                     setDifficulty('medium');
-                    pushAnalytics('settings_change', { setting: 'difficulty', value: 'medium' });
+                    trackSettingsChange('difficulty', 'medium');
                   } else if (newCount >= 7) {
                     setDifficulty('hard');
-                    pushAnalytics('settings_change', { setting: 'difficulty', value: 'hard' });
+                    trackSettingsChange('difficulty', 'hard');
                   }
                 }}
                 className="w-full h-2 bg-white/50 rounded-lg appearance-none cursor-pointer"

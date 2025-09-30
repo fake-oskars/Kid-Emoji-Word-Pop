@@ -22,3 +22,5 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+ANALYTICS_EVENTS.md
+ANALYTICS_SETUP.md
